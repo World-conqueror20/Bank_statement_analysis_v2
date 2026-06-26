@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Financial Investigation Platform — RAJ KUMAR</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<!-- Load all engine files before body renders -->
+<script src="schema.js"></script>
+<script src="rules.js"></script>
+<script src="engine.js"></script>
+<script src="data.js"></script>
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script src="ai.js"></script>
+<script src="export.js"></script>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ TOP BAR ═══════════════════════════════════════════════════════════════ -->
+<header id="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">FI</div>
+    <div>
+      <div class="brand-name">Investigation Platform</div>
+    </div>
+  </div>
+
+  <div class="topbar-case" id="case-selector">
+    <span class="case-badge" id="case-badge">CASE-001</span>
+    <span id="case-name">RAJ KUMAR — Primary Investigation</span>
+    <span style="color:var(--text-muted)">▾</span>
+  </div>
+
+  <div style="width:1px;height:24px;background:var(--border);margin:0 10px;flex-shrink:0"></div>
+
+  <div id="period-bar">
+    <button class="period-btn active" data-range="all">All</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2016-17">FY17</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2017-18">FY18</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2018-19">FY19</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2019-20">FY20</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2020-21">FY21</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2021-22">FY22</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2022-23">FY23</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2023-24">FY24</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2024-25">FY25</button>
+    <button class="period-btn" data-range="fy" data-fy="FY2025-26">FY26</button>
+    <div class="period-inputs">
+      <input type="date" id="date-from">
+      <span style="color:var(--text-muted);font-size:11px;margin:0 2px">–</span>
+      <input type="date" id="date-to">
+    </div>
+  </div>
+
+  <div class="topbar-spacer"></div>
+
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" id="btn-replay">▶ Replay</button>
+    <button class="btn btn-ghost" id="btn-print-report">🖨 Report</button>
+    <button class="btn btn-ghost" id="btn-export-all">⬇ Export</button>
+    <button class="btn btn-ghost" id="btn-snapshot">📷</button>
+    <button class="btn btn-ghost" id="btn-undo" title="Undo">↩</button>
+    <div id="dq-badge" style="padding:3px 8px;border-radius:3px;font-size:10px;font-family:var(--font-mono);background:var(--bg-2);border:1px solid var(--border);color:var(--text-muted)">DQ: —</div>
+  </div>
+</header>
+
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Views</div>
+    <div class="nav-item" data-view="dashboard"><span class="nav-icon">📊</span>Executive Summary</div>
+    <div class="nav-item" data-view="flow"><span class="nav-icon">🌊</span>Money Flow</div>
+    <div class="nav-item" data-view="network"><span class="nav-icon">🕸</span>Network (Static)</div>
+    <div class="nav-item" data-view="animated-network"><span class="nav-icon">🎬</span>Network (Animated)</div>
+    <div class="nav-item" data-view="chord"><span class="nav-icon">🔗</span>Flow Chord</div>
+    <div class="nav-item" data-view="parallel"><span class="nav-icon">📐</span>Parallel Coords</div>
+    <div class="nav-item" data-view="calendar"><span class="nav-icon">📅</span>Calendar Heatmap</div>
+    <div class="nav-item" data-view="govt"><span class="nav-icon">🏛</span>Govt Receipts</div>
+    <div class="nav-item" data-view="transactions"><span class="nav-icon">📋</span>Transactions <span class="nav-badge" id="nav-badge-txns">0</span></div>
+    <div class="nav-item" data-view="hypothesis"><span class="nav-icon">🔍</span>Hypothesis Test</div>
+    <div class="nav-item" data-view="scenario"><span class="nav-icon">⚖️</span>Scenario Compare</div>
+    <div class="nav-item" data-view="quality"><span class="nav-icon">🛡</span>Data Quality</div>
+  </div>
+
+  <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+    <div class="sidebar-section-label" style="display:flex;align-items:center">
+      Entities
+      <span id="clear-entity-filter" title="Clear entity filter" style="margin-left:auto;cursor:pointer;color:var(--text-muted);padding:0 4px">✕</span>
+    </div>
+    <div id="entity-list" class="entity-list" style="overflow-y:auto;flex:1"></div>
+  </div>
+
+  <div style="padding:8px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted);line-height:1.8" id="inv-metrics-mini"></div>
+</nav>
+
+<!-- ═══ MAIN ═══════════════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- Replay bar -->
+  <div id="replay-bar">
+    <button class="btn btn-ghost" id="btn-replay-stop" style="padding:3px 8px;flex-shrink:0">■ Stop</button>
+    <select id="replay-speed" class="filter-select" style="width:60px">
+      <option value="1">1×</option><option value="3">3×</option>
+      <option value="10">10×</option><option value="30">30×</option>
+    </select>
+    <select id="replay-mode" class="filter-select" style="width:100px">
+      <option value="transaction">All txns</option>
+      <option value="events">Events only</option>
+    </select>
+    <div class="replay-progress" id="replay-progress"><div class="replay-fill" id="replay-fill" style="width:0%"></div></div>
+    <div class="replay-narration" id="replay-narration">Press ▶ Replay to start</div>
+    <div class="replay-info" id="replay-info">0/0</div>
+  </div>
+
+  <!-- ══ DASHBOARD ══════════════════════════════════════════════════════════ -->
+  <div class="view-panel active" id="view-dashboard">
+    <!-- KPI bar -->
+    <div id="kpi-bar">
+      <div class="kpi-card"><div class="kpi-label">Total IN</div><div class="kpi-value positive" id="kpi-in">—</div><div class="kpi-sub" id="kpi-period">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total OUT</div><div class="kpi-value negative" id="kpi-out">—</div><div class="kpi-sub">both accounts</div></div>
+      <div class="kpi-card"><div class="kpi-label">Net Flow</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-sub">in − out</div></div>
+      <div class="kpi-card"><div class="kpi-label">Transactions</div><div class="kpi-value amber" id="kpi-txns">—</div><div class="kpi-sub" id="kpi-txns-sub">in period</div></div>
+      <div class="kpi-card"><div class="kpi-label">ATM / Cash</div><div class="kpi-value negative" id="kpi-cash">—</div><div class="kpi-sub">untraceable</div></div>
+      <div class="kpi-card"><div class="kpi-label">Flags</div><div class="kpi-value" id="kpi-flags" style="color:var(--flag)">—</div><div class="kpi-sub" id="kpi-flags-sub">patterns</div></div>
+    </div>
+
+    <!-- Stories -->
+    <div id="stories-bar"></div>
+
+    <!-- Charts row 1 -->
+    <div class="chart-grid" style="grid-template-columns:2fr 1fr;flex-shrink:0">
+      <div class="chart-panel">
+        <div class="chart-title">Running Balance — Combined Net <span class="chart-meta" id="balance-meta"></span></div>
+        <div id="chart-balance" style="height:190px"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Entity Risk Scores <span class="chart-meta">top 15</span></div>
+        <div id="chart-entities" style="height:190px"></div>
+      </div>
+    </div>
+
+    <!-- Charts row 2 -->
+    <div class="chart-grid" style="grid-template-columns:1fr;flex-shrink:0">
+      <div class="chart-panel">
+        <div class="chart-title">Monthly Inflow / Outflow <span class="chart-meta" id="monthly-meta"></span></div>
+        <div id="chart-monthly" style="height:150px"></div>
+      </div>
+    </div>
+
+    <!-- Entity cards -->
+    <div style="padding:6px 12px;font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);flex-shrink:0">
+      Major Entities — by Risk Score
+    </div>
+    <div id="entity-cards" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;overflow-y:auto;flex:1;min-height:0;align-content:flex-start"></div>
+  </div>
+
+  <!-- ══ FLOW ═══════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-flow">
+    <div class="chart-grid" style="grid-template-columns:1fr 1fr;flex:1">
+      <div class="chart-panel">
+        <div class="chart-title">Money Destination — Outflows by Category & Entity</div>
+        <div id="chart-destination" style="height:calc(100vh - 120px)"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Waterfall — Period Balance Breakdown</div>
+        <div id="chart-waterfall" style="height:calc(100vh - 120px)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NETWORK ════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-network">
+    <div class="chart-panel" style="flex:1">
+      <div class="chart-title">Relationship Network <span class="chart-meta">node size = volume · edge width = amount · drag to reposition</span></div>
+      <div id="chart-network" style="height:calc(100vh - 110px)"></div>
+    </div>
+  </div>
+
+  <!-- ══ CALENDAR ═══════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-calendar">
+    <div class="chart-panel" style="flex:1;overflow-y:auto">
+      <div class="chart-title">Calendar Heatmap — Daily Transaction Volume</div>
+      <div id="chart-calendar" style="min-height:700px"></div>
+    </div>
+  </div>
+
+  <!-- ══ GOVT ═══════════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-govt">
+    <div class="chart-panel" style="flex-shrink:0">
+      <div class="chart-title">Government Receipt Tracker — Dispersal within 7 days of each credit</div>
+      <div id="chart-govt" style="height:280px"></div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:0 12px 12px">
+      <table class="txn-table" id="govt-table">
+        <thead><tr>
+          <th>Date</th><th>Bank</th><th>Narration</th><th>Received</th>
+          <th>Out 1d</th><th>Out 7d</th><th>Out 30d</th><th>% Dispersed 7d</th>
+        </tr></thead>
+        <tbody id="govt-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ TRANSACTIONS ═══════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-transactions">
+    <div id="txn-toolbar">
+      <input class="txn-search" id="txn-search" placeholder="Search narration or entity…" type="text">
+      <select class="filter-select" id="filter-bank">
+        <option value="">All Banks</option>
+        <option value="Axis">Axis</option>
+        <option value="PNB">PNB</option>
+      </select>
+      <select class="filter-select" id="filter-dir">
+        <option value="">IN & OUT</option>
+        <option value="IN">IN only</option>
+        <option value="OUT">OUT only</option>
+      </select>
+      <select class="filter-select" id="filter-cat">
+        <option value="">All Categories</option>
+        <option value="GOVERNMENT">Government</option>
+        <option value="FAMILY">Family</option>
+        <option value="CASH">Cash/ATM</option>
+        <option value="BUSINESS">Business</option>
+        <option value="BANK">Bank Charges</option>
+        <option value="UNKNOWN">Unknown</option>
+      </select>
+      <select class="filter-select" id="filter-flag">
+        <option value="">All Flags</option>
+        <option value="POST_GOVT_DISPERSAL">Post-Govt Dispersal</option>
+        <option value="ROUND_FIGURE_TRANSFER">Round Figure</option>
+        <option value="ATM_CLUSTER">ATM Cluster</option>
+        <option value="CIRCULAR_FLOW">Circular Flow</option>
+        <option value="SAME_DAY_TRANSIT">Same-Day Transit</option>
+        <option value="RAPID_SEQUENTIAL">Rapid Sequential</option>
+        <option value="SPLIT_PAYMENT">Split Payment</option>
+      </select>
+      <input class="txn-search" id="filter-min" placeholder="Min ₹" type="number" style="width:90px">
+      <div class="topbar-spacer"></div>
+      <button class="btn btn-ghost" id="btn-export-csv">⬇ CSV</button>
+      <button class="btn btn-ghost" id="btn-export-flags">⬇ Flags</button>
+      <span style="font-size:11px;color:var(--text-muted);white-space:nowrap" id="txn-count-label">0 transactions</span>
+    </div>
+    <div id="txn-table-wrap" style="flex:1;overflow:auto">
+      <table class="txn-table">
+        <thead><tr>
+          <th data-sort="dateTime">Date</th>
+          <th data-sort="bank">Bank</th>
+          <th>Narration</th>
+          <th data-sort="entityId">Entity</th>
+          <th>Category</th>
+          <th data-sort="amount">Amount IN</th>
+          <th data-sort="amount">Amount OUT</th>
+          <th>Flags</th>
+          <th>Prov.</th>
+        </tr></thead>
+        <tbody id="txn-tbody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span id="page-info">Page 1 of 1</span>
+      <div class="page-btns" id="page-btns"></div>
+      <select class="filter-select" id="page-size" style="width:90px">
+        <option value="50">50/page</option>
+        <option value="100">100/page</option>
+        <option value="200">200/page</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ══ HYPOTHESIS ═════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-hypothesis">
+    <div style="padding:14px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Hypothesis Statement</div>
+      <textarea class="hyp-input" id="hyp-statement" placeholder="e.g. Government compensation was largely transferred to recurring beneficiaries shortly after receipt." style="width:100%"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <select class="filter-select" id="hyp-trigger-cat">
+          <option value="GOVERNMENT">Trigger: Govt credit IN</option>
+          <option value="CASH">Trigger: Cash deposit</option>
+          <option value="FAMILY">Trigger: Family receipt</option>
+        </select>
+        <input class="txn-search" id="hyp-window" type="number" value="30" style="width:90px" placeholder="Window (days)">
+        <input class="txn-search" id="hyp-minamount" type="number" placeholder="Min trigger ₹" style="width:120px">
+        <select class="filter-select" id="hyp-condition-dir">
+          <option value="OUT">Condition: Money OUT</option>
+          <option value="IN">Condition: Money IN</option>
+        </select>
+        <button class="btn btn-amber" id="btn-run-hyp">Run Hypothesis</button>
+        <button class="btn btn-ghost" id="btn-ai-hyp" title="Ask AI to explain results">AI Explain</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px" id="hyp-results">
+      <div style="color:var(--text-muted);font-size:12px;font-style:italic">Define a hypothesis above and click Run.</div>
+    </div>
+  </div>
+
+  <!-- ══ DATA QUALITY ════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-quality">
+    <div style="padding:16px;overflow-y:auto;flex:1">
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px">Data Quality Report</div>
+      <div id="dq-panel"></div>
+    </div>
+  </div>
+
+  <!-- ══ CHORD DIAGRAM ════════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-chord">
+    <div class="chart-panel" style="flex:1">
+      <div class="chart-title">Money Flow Network — Who transacted with whom and how much
+        <span class="chart-meta">width = ₹ amount · top 10 entities</span>
+      </div>
+      <div id="chart-chord" style="height:calc(100vh - 120px)"></div>
+    </div>
+  </div>
+
+  <!-- ══ PARALLEL COORDINATES ════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-parallel">
+    <div class="chart-panel" style="flex:1">
+      <div class="chart-title">Parallel Coordinates — Entity comparison across 6 dimensions
+        <span class="chart-meta">each line = one entity · colour = severity · drag axes to reorder</span>
+      </div>
+      <div id="chart-parallel" style="height:calc(100vh - 120px)"></div>
+    </div>
+  </div>
+
+  <!-- ══ ANIMATED NETWORK ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-animated-network">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0">
+      <div class="chart-title" style="margin:0">Time-Aware Network</div>
+      <button class="btn btn-amber" id="btn-net-play">▶ Play</button>
+      <button class="btn btn-ghost" id="btn-net-stop">■ Stop</button>
+      <input type="range" id="net-year-slider" min="2007" max="2026" value="2007"
+        style="flex:1;accent-color:var(--amber)">
+      <div id="net-year-label" style="font-size:18px;font-weight:700;font-family:var(--font-mono);color:var(--amber);min-width:44px">2007</div>
+      <span style="font-size:10px;color:var(--text-muted)">Relationships grow as money flows over time</span>
+    </div>
+    <div class="chart-panel" style="flex:1;padding:0">
+      <div id="chart-network-animated" style="height:calc(100vh - 120px)"></div>
+    </div>
+  </div>
+
+  <!-- ══ SCENARIO COMPARISON ════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-scenario">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+      <div class="chart-title" style="margin:0;flex-shrink:0">Scenario Comparison</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:11px;color:var(--amber);font-weight:600">Period A:</span>
+        <input type="date" id="scenario-a-from" class="txn-search" style="width:130px">
+        <span style="color:var(--text-muted)">–</span>
+        <input type="date" id="scenario-a-to" class="txn-search" style="width:130px">
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:11px;color:var(--govt);font-weight:600">Period B:</span>
+        <input type="date" id="scenario-b-from" class="txn-search" style="width:130px">
+        <span style="color:var(--text-muted)">–</span>
+        <input type="date" id="scenario-b-to" class="txn-search" style="width:130px">
+      </div>
+      <button class="btn btn-amber" id="btn-run-scenario">Compare</button>
+      <div style="display:flex;gap:6px;margin-left:auto">
+        <button class="btn btn-ghost" data-preset="fy21-fy22">FY20-21 vs FY21-22</button>
+        <button class="btn btn-ghost" data-preset="pre-post-nhai">Pre-NHAI vs Post-NHAI</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);flex-shrink:0">
+      <div class="chart-panel"><div class="chart-title" id="scenario-a-title" style="color:var(--amber)">Period A</div><div id="chart-scenario-a" style="height:250px"></div></div>
+      <div class="chart-panel"><div class="chart-title" id="scenario-b-title" style="color:var(--govt)">Period B</div><div id="chart-scenario-b" style="height:250px"></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">What Changed?</div>
+      <div id="scenario-diff" style="font-size:12px;color:var(--text-muted);font-style:italic">Select two periods and click Compare.</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ RIGHT PANEL ════════════════════════════════════════════════════════════ -->
+<aside id="rightpanel">
+  <div class="rp-tabs">
+    <div class="rp-tab active" data-rp="entity">Entity</div>
+    <div class="rp-tab" data-rp="cash">Cash</div>
+    <div class="rp-tab" data-rp="ai">AI</div>
+    <div class="rp-tab" data-rp="notes">Notes</div>
+  </div>
+
+  <!-- Entity panel -->
+  <div class="rp-panel active" id="rp-entity" style="overflow-y:auto">
+    <div id="rp-entity-empty" style="padding:16px;color:var(--text-muted);font-size:11px;font-style:italic">
+      Click an entity in the sidebar or a transaction row to view its profile.
+    </div>
+    <div id="rp-entity-content"></div>
+  </div>
+
+  <!-- Cash panel -->
+  <div class="rp-panel" id="rp-cash" style="overflow-y:auto">
+    <div style="padding:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Cash Reconstruction</div>
+      <div id="cash-panel-content"></div>
+      <div class="divider"></div>
+      <div style="font-size:10px;color:var(--text-muted);line-height:1.7">
+        ATM withdrawals = <span style="color:var(--out)">cash out</span> (no recipient).<br>
+        Cash deposits = <span style="color:var(--in)">cash in</span> (no source).<br>
+        Unmatched = no deposit within 30 days of withdrawal.
+      </div>
+    </div>
+  </div>
+
+  <!-- AI panel -->
+  <div class="rp-panel" id="rp-ai">
+    <div class="ai-panel">
+      <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Anthropic API Key</div>
+      <div class="ai-key-row">
+        <input class="ai-key-input" id="ai-key-input" type="password" placeholder="sk-ant-…">
+        <button class="btn btn-ghost" id="btn-save-key">Save</button>
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Stored in browser only.</div>
+
+      <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Question</div>
+      <textarea class="ai-query-input" id="ai-query" placeholder="Ask about the data…&#10;e.g. 'Which entity received most money after govt credits?'&#10;e.g. 'Explain April 2021 transactions'&#10;&#10;Ctrl+Enter to submit"></textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;margin-bottom:10px">
+        <button class="btn btn-amber" id="btn-ai-ask" style="flex:1">Ask</button>
+        <button class="btn btn-ghost" id="btn-ai-filter" title="Apply filter from question">Filter</button>
+      </div>
+
+      <div class="ai-quick-btns">
+        <button class="ai-quick-btn" data-action="explain-period">Explain current period</button>
+        <button class="ai-quick-btn" data-action="explain-entity">Explain selected entity</button>
+        <button class="ai-quick-btn" data-action="generate-report">Generate investigation report</button>
+        <button class="ai-quick-btn" id="btn-build-narration" style="color:var(--amber);border-color:var(--amber-dim)">🎙 Build replay narration (AI)</button>
+      </div>
+      <div class="divider"></div>
+      <div id="ai-response" class="ai-response">Enter an API key and ask a question.</div>
+    </div>
+  </div>
+
+  <!-- Notes panel -->
+  <div class="rp-panel" id="rp-notes" style="overflow-y:auto">
+    <div class="notes-panel">
+      <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Add Event Marker</div>
+      <input class="txn-search" id="marker-label" placeholder="Label…" style="width:100%">
+      <input type="date" id="marker-date" class="txn-search" style="width:100%;margin-top:4px">
+      <select class="filter-select" id="marker-type" style="width:100%;margin-top:4px">
+        <option value="financial">Financial Event</option>
+        <option value="legal">Legal Event</option>
+        <option value="family">Family Event</option>
+        <option value="investigator">Investigator Note</option>
+        <option value="external">External Evidence</option>
+      </select>
+      <textarea class="note-textarea" id="marker-desc" placeholder="Description (optional)" style="min-height:50px;margin-top:4px"></textarea>
+      <button class="btn btn-amber" id="btn-add-marker" style="width:100%;margin-top:6px;justify-content:center">Add Marker</button>
+      <div class="divider"></div>
+      <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+        Markers (<span id="marker-count">0</span>)
+      </div>
+      <div id="marker-list"></div>
+    </div>
+  </div>
+</aside>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// APPLICATION — wires all modules together, manages UI state
+// ═══════════════════════════════════════════════════════════════════════════════
+const App = (() => {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let _activeView = 'dashboard';
+  let _selectedEntityId = null;
+  let _netYear = 2026;
+  let _txnPage = 1, _txnPageSize = 50;
+  let _txnSort = { field: 'dateTime', dir: 'desc' };
+  let _displayTxns = [];
+  let _flagMap = {};  // txnId → ruleId[]
+  let _hyp_result = null;
+
+  // ── Formatters ────────────────────────────────────────────────────────────
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs >= 10000000) return '₹' + (n/10000000).toFixed(2) + ' Cr';
+    if (abs >= 100000)   return '₹' + (n/100000).toFixed(2) + 'L';
+    if (abs >= 1000)     return '₹' + (n/1000).toFixed(1) + 'K';
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+  function fmtFull(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+  function dateStr(dt) {
+    if (!dt) return '—';
+    if (dt instanceof Date) return dt.toISOString().slice(0,10);
+    return String(dt).slice(0,10);
+  }
+  function sevClass(s) {
+    return { Critical:'critical', High:'high', Medium:'medium', Low:'low' }[s] || 'low';
+  }
+  function catTagClass(c) {
+    return { GOVERNMENT:'govt', FAMILY:'low', CASH:'medium', BUSINESS:'low' }[c] || '';
+  }
+
+  // ── Build flag map from computed ──────────────────────────────────────────
+  function buildFlagMap(flags) {
+    _flagMap = {};
+    (flags||[]).forEach(f => {
+      (f.txnIds||[]).forEach(id => {
+        if (!_flagMap[id]) _flagMap[id] = [];
+        const label = (f.ruleId||'').replace(/_/g,' ');
+        if (!_flagMap[id].includes(label)) _flagMap[id].push(label);
+      });
+    });
+  }
+
+  // ── KPI bar ───────────────────────────────────────────────────────────────
+  function updateKPIs(c) {
+    const { balance, cash, flags } = c;
+    const net = balance.netFlow;
+    setText('kpi-in',   fmt(balance.totalIn));
+    setText('kpi-out',  fmt(balance.totalOut));
+    setText('kpi-net',  fmt(net));
+    setClass('kpi-net', 'kpi-value ' + (net >= 0 ? 'positive' : 'negative'));
+    setText('kpi-txns', (c.displayTransactions?.length || 0).toLocaleString());
+    setText('kpi-cash', fmt(cash?.cashOut || 0));
+    setText('kpi-flags', (flags?.length || 0).toString());
+
+    const ruleCount = new Set((flags||[]).map(f=>f.ruleId)).size;
+    setText('kpi-flags-sub', ruleCount + ' rule types');
+
+    const f = c.activeFilter || {};
+    const period = f.from ? `${f.from} → ${f.to||'now'}` : 'Apr 2016 – Jun 2026';
+    setText('kpi-period', period);
+    setText('kpi-txns-sub', 'in period');
+    setText('balance-meta', fmtFull(net) + ' net');
+
+    // DQ badge
+    const dq = c.dataQuality;
+    if (dq) setText('dq-badge', `DQ: ${dq.completenessScore}%`);
+  }
+
+  // ── Stories bar ───────────────────────────────────────────────────────────
+  function updateStories(c) {
+    const bar = document.getElementById('stories-bar');
+    bar.innerHTML = '';
+    (c.stories||[]).forEach(s => {
+      const chip = el('div','story-chip');
+      chip.innerHTML = `<span class="story-sev ${sevClass(s.severity)}">[${s.severity.toUpperCase()}]</span> ${esc(s.title)}`;
+      chip.title = s.description;
+      chip.onclick = () => { switchView('transactions'); highlightTxns(s.txnIds||[]); };
+      bar.appendChild(chip);
+    });
+  }
+
+  // ── Entity list (sidebar) ─────────────────────────────────────────────────
+  function updateEntityList(c) {
+    const list = document.getElementById('entity-list');
+    list.innerHTML = '';
+    const scores = Object.values(c.scores||{})
+      .filter(s => s.txnCount > 0 && s.entityId !== 'UNRESOLVED')
+      .sort((a,b) => b.score - a.score);
+
+    scores.forEach(s => {
+      const item = el('div', 'entity-item' + (s.entityId === _selectedEntityId ? ' selected' : ''));
+      item.innerHTML = `<div class="entity-severity sev-${sevClass(s.severity)}"></div>
+        <div class="entity-name">${esc(s.entityId)}</div>
+        <div class="entity-amount">${fmt(s.totalOut + s.totalIn)}</div>`;
+      item.onclick = () => selectEntity(s.entityId, c);
+      list.appendChild(item);
+    });
+    setText('nav-badge-txns', (c.displayTransactions?.length||0).toLocaleString());
+  }
+
+  // ── Entity cards (dashboard) ──────────────────────────────────────────────
+  function updateEntityCards(c) {
+    const wrap = document.getElementById('entity-cards');
+    wrap.innerHTML = '';
+    Object.values(c.scores||{})
+      .filter(s => s.score >= 15 && s.txnCount > 0 && s.entityId !== 'UNRESOLVED')
+      .sort((a,b) => b.score - a.score)
+      .slice(0, 14)
+      .forEach(s => {
+        const col = { Critical:'var(--critical)', High:'var(--high)', Medium:'var(--medium)', Low:'var(--low)' }[s.severity]||'var(--low)';
+        const card = el('div');
+        card.style.cssText = 'flex:0 0 210px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:10px;cursor:pointer;transition:border-color .15s';
+        card.addEventListener('mouseenter', () => card.style.borderColor='var(--border-bright)');
+        card.addEventListener('mouseleave', () => card.style.borderColor='var(--border)');
+        card.onclick = () => selectEntity(s.entityId, c);
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div style="width:32px;height:32px;border-radius:50%;border:2.5px solid ${col};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${col};flex-shrink:0">${s.score}</div>
+            <div style="min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.entityId)}</div>
+              <span class="tag tag-${sevClass(s.severity)}">${s.severity}</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;min-height:32px">${esc(s.plainSummary||'')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:10px;font-family:var(--font-mono)">
+            <div><span style="color:var(--text-muted)">OUT </span><span style="color:var(--out);font-weight:600">${fmt(s.totalOut)}</span></div>
+            <div><span style="color:var(--text-muted)">IN </span><span style="color:var(--in);font-weight:600">${fmt(s.totalIn)}</span></div>
+            <div><span style="color:var(--text-muted)">TXNS </span>${s.txnCount}</div>
+            <div><span style="color:var(--text-muted)">FLAGS </span><span style="color:var(--flag)">${(s.flags||[]).length}</span></div>
+          </div>`;
+        wrap.appendChild(card);
+      });
+  }
+
+  // ── Entity profile (right panel) ──────────────────────────────────────────
+  function showEntityProfile(entityId, c) {
+    setText('rp-entity-empty','');
+    const content = document.getElementById('rp-entity-content');
+    const score = c.scores?.[entityId];
+    if (!score) { content.innerHTML = `<div style="padding:12px;color:var(--text-muted)">No data for ${esc(entityId)}</div>`; return; }
+
+    const entityTxns = (c.transactions||[]).filter(t => t.entityId === entityId);
+    const flags = (c.flags||[]).filter(f =>
+      (f.entityIds||[]).includes(entityId) ||
+      (f.txnIds||[]).some(id => entityTxns.find(t=>t.id===id))
+    );
+
+    const ringClass = { Critical:'ring-critical', High:'ring-high', Medium:'ring-medium', Low:'ring-low' }[score.severity]||'ring-low';
+    const sc = sevClass(score.severity);
+
+    content.innerHTML = `
+      <div class="entity-profile">
+        <div class="entity-profile-header">
+          <div class="entity-score-ring ${ringClass}">${score.score}</div>
+          <div>
+            <div class="entity-profile-name">${esc(entityId)}</div>
+            <div class="entity-profile-sub"><span class="tag tag-${sc}">${score.severity}</span> ${score.txnCount} txns · ${(score.flags||[]).length} flags</div>
+          </div>
+        </div>
+        <div class="entity-plain-summary">${esc(score.plainSummary||'No summary.')}</div>
+        <div class="entity-stat-grid">
+          <div class="entity-stat"><div class="entity-stat-label">Total OUT</div><div class="entity-stat-value out">${fmt(score.totalOut)}</div></div>
+          <div class="entity-stat"><div class="entity-stat-label">Total IN</div><div class="entity-stat-value in">${fmt(score.totalIn)}</div></div>
+          <div class="entity-stat"><div class="entity-stat-label">First Seen</div><div class="entity-stat-value" style="font-size:11px;color:var(--text-secondary)">${dateStr(score.firstSeen)}</div></div>
+          <div class="entity-stat"><div class="entity-stat-label">Last Seen</div><div class="entity-stat-value" style="font-size:11px;color:var(--text-secondary)">${dateStr(score.lastSeen)}</div></div>
+        </div>
+      </div>
+      <div class="evidence-section">
+        <div class="evidence-title">Risk Contributors</div>
+        ${(score.contributors||[]).map(c => `
+          <div class="evidence-item">
+            <div class="evidence-rule">${esc(c.ruleId)} <span style="color:var(--in)">+${c.points}pts</span></div>
+            <div class="evidence-desc">${esc(c.ruleName)}</div>
+          </div>`).join('') || '<div style="font-size:11px;color:var(--text-muted);padding:4px 0">No scoring contributors.</div>'}
+      </div>
+      <div class="evidence-section">
+        <div class="evidence-title">Flags & Evidence</div>
+        ${flags.map(f => `
+          <div class="evidence-item" style="cursor:pointer" onclick="App.highlightTxns(${JSON.stringify(f.txnIds||[])})">
+            <div class="evidence-rule">[${f.severity}] ${esc(f.ruleId)}</div>
+            <div class="evidence-desc">${esc(f.description)}</div>
+            <div class="evidence-txns">${(f.txnIds||[]).slice(0,6).map(id=>`<span class="evidence-txn-link" onclick="event.stopPropagation();App.jumpToTxn('${id}')">${id}</span>`).join(' ')}</div>
+          </div>`).join('') || '<div style="font-size:11px;color:var(--text-muted);padding:4px 0">No flags.</div>'}
+      </div>
+      <div style="padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="App.filterByEntity('${entityId}')">Filter all views to ${esc(entityId)}</button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="App.askAI('Analyse the transaction pattern for ${entityId}. What should an investigator focus on?')">Ask AI about ${esc(entityId)}</button>
+      </div>`;
+    switchRpTab('entity');
+  }
+
+  // ── Cash panel ────────────────────────────────────────────────────────────
+  function updateCashPanel(c) {
+    const cash = c.cash;
+    const el2 = document.getElementById('cash-panel-content');
+    if (!cash) { el2.innerHTML = ''; return; }
+    el2.innerHTML = `
+      <div class="cash-row"><span class="cash-label">Cash OUT (ATM)</span><span class="cash-value out">${fmtFull(cash.cashOut)}</span></div>
+      <div class="cash-row"><span class="cash-label">Cash IN (deposits)</span><span class="cash-value in">${fmtFull(cash.cashIn)}</span></div>
+      <div class="cash-row"><span class="cash-label">Matched pairs</span><span class="cash-value" style="color:var(--in)">${cash.matchedPairs?.length||0}</span></div>
+      <div class="cash-row gap"><span class="cash-label">Unmatched withdrawals</span><span class="cash-value out">${cash.unmatchedCash?.length||0}</span></div>
+      <div class="cash-row total"><span class="cash-label">Net Cash</span><span class="cash-value ${cash.netCash>=0?'in':'out'}">${fmtFull(cash.netCash)}</span></div>
+      <div class="divider"></div>
+      <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Unmatched (top 15)</div>
+      ${(cash.unmatchedCash||[]).slice(0,15).map(u=>`
+        <div class="cash-row"><span class="cash-label" style="font-size:10px;font-family:var(--font-mono)">${dateStr(u.date)}</span><span class="cash-value out" style="font-size:11px">${fmt(u.amount)}</span></div>`).join('')}
+      ${(cash.unmatchedCash||[]).length>15?`<div style="font-size:10px;color:var(--text-muted);padding:4px 0">+${cash.unmatchedCash.length-15} more</div>`:''}`;
+  }
+
+  // ── Data quality panel ────────────────────────────────────────────────────
+  function updateDQPanel(c) {
+    const dq = c.dataQuality;
+    const panel = document.getElementById('dq-panel');
+    if (!dq) return;
+    const row = (label,val,cls='') => `<div class="dq-item"><span class="dq-label">${label}</span><span class="dq-value ${cls}">${val}</span></div>`;
+    panel.innerHTML = `
+      ${row('Total transactions', dq.total?.toLocaleString())}
+      ${row('Verified (electronic XLS/CSV)', `${dq.verified} (${Math.round((dq.verified||0)/(dq.total||1)*100)}%)`, 'ok')}
+      ${row('Imported (PDF extracted)', `${dq.imported} (${Math.round((dq.imported||0)/(dq.total||1)*100)}%)`, 'warn')}
+      ${row('Estimated (reconstructed)', dq.estimated||0, dq.estimated>0?'warn':'ok')}
+      ${row('Missing closing balances', dq.missingBalances, dq.missingBalances>100?'warn':'ok')}
+      ${row('Unresolved entities', dq.unresolved, dq.unresolved>30?'warn':'ok')}
+      ${row('Suspected duplicates', dq.suspectedDuplicates, dq.suspectedDuplicates>0?'warn':'ok')}
+      ${row('Zero-amount entries', dq.zeroAmount)}
+      ${row('Completeness score', dq.completenessScore+'%', dq.completenessScore>60?'ok':'warn')}
+      <div class="divider"></div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.8">
+        <strong>PNB (940 rows):</strong> Verified — original XLS electronic statements<br>
+        <strong>Axis post-Jul 2023 (178 rows):</strong> Verified — original CSV<br>
+        <strong>Axis pre-Jul 2023 (219 rows):</strong> Imported — extracted from PDF statements<br>
+        <br><strong>Note:</strong> Axis pre-2023 figures should be cross-verified against original PDF statements before use as formal evidence.
+      </div>`;
+  }
+
+  // ── Transaction table ─────────────────────────────────────────────────────
+  function updateTxnTable(c) {
+    buildFlagMap(c.flags);
+    _displayTxns = [...(c.displayTransactions||[])];
+    sortTxns();
+    setText('txn-count-label', _displayTxns.length.toLocaleString() + ' transactions');
+    _txnPage = 1;
+    renderTxnPage();
+  }
+
+  function sortTxns() {
+    _displayTxns.sort((a,b) => {
+      let va = a[_txnSort.field], vb = b[_txnSort.field];
+      if (_txnSort.field === 'dateTime') { va = new Date(va); vb = new Date(vb); }
+      if (va < vb) return _txnSort.dir==='asc' ? -1 : 1;
+      if (va > vb) return _txnSort.dir==='asc' ?  1 : -1;
+      return 0;
+    });
+  }
+
+  function renderTxnPage() {
+    const total = Math.ceil(_displayTxns.length / _txnPageSize) || 1;
+    _txnPage = Math.max(1, Math.min(_txnPage, total));
+    const start = (_txnPage-1) * _txnPageSize;
+    const rows = _displayTxns.slice(start, start + _txnPageSize);
+
+    const tbody = document.getElementById('txn-tbody');
+    tbody.innerHTML = '';
+    rows.forEach(t => {
+      const d = dateStr(t.dateTime);
+      const flags = _flagMap[t.id] || [];
+      const isIn  = t.direction === 'IN';
+      const provCls = { Verified:'prov-verified', Imported:'prov-imported', Estimated:'prov-estimated' }[t.provenance] || '';
+      const tr = document.createElement('tr');
+      tr.dataset.txnId = t.id;
+      if (flags.length) tr.classList.add('flagged');
+      tr.innerHTML = `
+        <td class="txn-date text-mono">${d}</td>
+        <td class="txn-bank">${t.bank||'—'}</td>
+        <td class="txn-narr" title="${esc(t.narration||'')}">${esc((t.narration||'').slice(0,60))}</td>
+        <td class="txn-entity" title="${esc(t.entityId||'')}">${esc(t.entityId||'—')}</td>
+        <td><span class="tag tag-${catTagClass(t.categoryId)}" style="font-size:9px">${t.categoryId||'?'}</span></td>
+        <td class="txn-amt-in">${isIn ? fmtFull(t.amount) : ''}</td>
+        <td class="txn-amt-out">${!isIn ? fmtFull(t.amount) : ''}</td>
+        <td class="txn-flags">${flags.map(f=>`<span class="flag-chip">${f.slice(0,14)}</span>`).join('')}</td>
+        <td><span class="prov-badge ${provCls}">${(t.provenance||'?').slice(0,3)}</span></td>`;
+      tr.onclick = () => {
+        document.querySelectorAll('.txn-table tr.selected').forEach(r=>r.classList.remove('selected'));
+        tr.classList.add('selected');
+        if (t.entityId) selectEntity(t.entityId, State.computed);
+      };
+      tbody.appendChild(tr);
+    });
+
+    setText('page-info', `Page ${_txnPage} of ${total}`);
+    renderPageBtns(total);
+  }
+
+  function renderPageBtns(total) {
+    const wrap = document.getElementById('page-btns');
+    wrap.innerHTML = '';
+    const mk = (label, page, active=false, disabled=false) => {
+      const b = el('button','page-btn'+(active?' active':''));
+      b.textContent = label;
+      b.disabled = disabled;
+      if (!disabled) b.onclick = () => { _txnPage = page; renderTxnPage(); };
+      wrap.appendChild(b);
+    };
+    mk('◀', _txnPage-1, false, _txnPage<=1);
+    const s = Math.max(1, _txnPage-2), e = Math.min(total, s+4);
+    for (let p=s; p<=e; p++) mk(p, p, p===_txnPage);
+    mk('▶', _txnPage+1, false, _txnPage>=total);
+  }
+
+  // ── Govt receipts table ───────────────────────────────────────────────────
+  function updateGovtTable(c) {
+    const tbody = document.getElementById('govt-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const govtTxns = (c.transactions||[])
+      .filter(t => t.categoryId==='GOVERNMENT' && t.direction==='IN' && t.amount>1000)
+      .sort((a,b) => new Date(a.dateTime)-new Date(b.dateTime));
+
+    govtTxns.forEach(g => {
+      const gDate = new Date(g.dateTime);
+      const outWithin = days => {
+        const end = new Date(gDate.getTime() + days*86400000);
+        return (c.transactions||[])
+          .filter(t => t.direction==='OUT' && new Date(t.dateTime)>gDate && new Date(t.dateTime)<=end)
+          .reduce((s,t)=>s+t.amount, 0);
+      };
+      const o1=outWithin(1), o7=outWithin(7), o30=outWithin(30);
+      const pct = g.amount>0 ? Math.round(o7/g.amount*100) : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="txn-date text-mono">${dateStr(g.dateTime)}</td>
+        <td class="txn-bank">${g.bank}</td>
+        <td class="txn-narr" title="${esc(g.narration||'')}">${esc((g.narration||'').slice(0,50))}</td>
+        <td class="txn-amt-in">${fmtFull(g.amount)}</td>
+        <td class="${o1>0?'txn-amt-out':''}">${o1>0?fmt(o1):'—'}</td>
+        <td class="${o7>0?'txn-amt-out':''}">${o7>0?fmt(o7):'—'}</td>
+        <td class="${o30>0?'txn-amt-out':''}">${o30>0?fmt(o30):'—'}</td>
+        <td style="font-weight:600;color:${pct>60?'var(--out)':pct>0?'var(--medium)':'var(--text-muted)'}">${pct>0?pct+'%':'—'}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Markers ───────────────────────────────────────────────────────────────
+  function updateMarkers() {
+    const markers = State.eventMarkers||[];
+    const list = document.getElementById('marker-list');
+    setText('marker-count', markers.length);
+    list.innerHTML = markers.length===0
+      ? '<div style="font-size:11px;color:var(--text-muted)">No markers yet.</div>'
+      : markers.map(m => `
+          <div class="marker-item">
+            <div class="marker-dot marker-${m.type||'investigator'}"></div>
+            <div class="marker-body">
+              <div class="marker-label">${esc(m.label)}</div>
+              <div class="marker-date">${dateStr(m.date)} · ${m.type||'investigator'}</div>
+              ${m.description?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${esc(m.description)}</div>`:''}
+            </div>
+            <span class="marker-del" onclick="State.removeMarker('${m.id}')">✕</span>
+          </div>`).join('');
+  }
+
+  // ── Investigation metrics ─────────────────────────────────────────────────
+  function updateInvMetrics() {
+    const m = State.getInvestigationMetrics();
+    document.getElementById('inv-metrics-mini').innerHTML =
+      `Rules: ${m.rulesEnabled} active · Merges: ${m.manualMerges}<br>Markers: ${m.eventMarkers} · Actions: ${m.actionLogLength}`;
+  }
+
+  // ── Master update ─────────────────────────────────────────────────────────
+  function onStateChange(c) {
+    if (!c) return;
+    updateKPIs(c);
+    updateStories(c);
+    updateEntityList(c);
+    updateEntityCards(c);
+    updateCashPanel(c);
+    updateDQPanel(c);
+    updateTxnTable(c);
+    updateMarkers();
+    updateInvMetrics();
+
+    // Always render the always-visible dashboard charts
+    Charts.renderRunningBalance(c);
+    Charts.renderMonthlyFlow(c);
+    Charts.renderEntityScores(c);
+    Charts.buildReplayScript(c);
+
+    // Lazy-render current view's charts
+    if (_activeView==='flow')             { Charts.renderDestinationTree(c); Charts.renderWaterfall(c); }
+    if (_activeView==='network')          Charts.renderNetwork(c);
+    if (_activeView==='animated-network') Charts.renderAnimatedNetwork(c, _netYear||2026);
+    if (_activeView==='chord')            Charts.renderChord(c);
+    if (_activeView==='parallel')         Charts.renderParallelCoords(c);
+    if (_activeView==='calendar')         Charts.renderCalendarHeatmap(c);
+    if (_activeView==='govt')             { Charts.renderGovtTimeline(c); updateGovtTable(c); }
+  }
+
+  // ── View switching ────────────────────────────────────────────────────────
+  function switchView(view) {
+    _activeView = view;
+    document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
+    const panel = document.getElementById('view-'+view);
+    if (panel) panel.classList.add('active');
+    const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
+    if (nav) nav.classList.add('active');
+
+  // Lazy render heavy charts on first visit
+  function lazyRender(view) {
+    const c = State.computed;
+    if (!c) return;
+    setTimeout(() => {
+      if (view==='flow')             { Charts.renderDestinationTree(c); Charts.renderWaterfall(c); }
+      if (view==='network')          Charts.renderNetwork(c);
+      if (view==='animated-network') Charts.renderAnimatedNetwork(c, _netYear);
+      if (view==='chord')            Charts.renderChord(c);
+      if (view==='parallel')         Charts.renderParallelCoords(c);
+      if (view==='calendar')         Charts.renderCalendarHeatmap(c);
+      if (view==='govt')             { Charts.renderGovtTimeline(c); updateGovtTable(c); }
+      Charts.resize();
+    }, 80);
+  }
+
+    // Lazy render heavy charts on first visit (legacy call)
+    const c = State.computed;
+    if (!c) return;
+    lazyRender(view);
+  }
+
+  // ── Right panel tabs ──────────────────────────────────────────────────────
+  function switchRpTab(tab) {
+    document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.rp-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.rp-tab[data-rp="${tab}"]`)?.classList.add('active');
+    document.getElementById('rp-'+tab)?.classList.add('active');
+  }
+
+  // ── Entity selection ──────────────────────────────────────────────────────
+  function selectEntity(entityId, c) {
+    _selectedEntityId = entityId;
+    c = c || State.computed;
+    if (c) showEntityProfile(entityId, c);
+    document.querySelectorAll('#entity-list .entity-item').forEach(i => {
+      i.classList.toggle('selected', i.querySelector('.entity-name')?.textContent === entityId);
+    });
+  }
+
+  function filterByEntity(entityId) {
+    State.setEntityFilter([entityId]);
+  }
+
+  function highlightTxns(txnIds) {
+    switchView('transactions');
+    const ids = new Set(txnIds);
+    document.querySelectorAll('.txn-table tr[data-txn-id]').forEach(tr => {
+      tr.classList.toggle('selected', ids.has(tr.dataset.txnId));
+    });
+    const first = document.querySelector('.txn-table tr.selected');
+    first?.scrollIntoView({block:'nearest', behavior:'smooth'});
+  }
+
+  function jumpToTxn(txnId) {
+    switchView('transactions');
+    // Find page containing this txn
+    const idx = _displayTxns.findIndex(t => t.id === txnId);
+    if (idx >= 0) {
+      _txnPage = Math.ceil((idx+1)/_txnPageSize);
+      renderTxnPage();
+    }
+    setTimeout(() => {
+      const row = document.querySelector(`tr[data-txn-id="${txnId}"]`);
+      if (row) { row.classList.add('selected'); row.scrollIntoView({block:'center',behavior:'smooth'}); }
+    }, 50);
+  }
+
+  // ── Hypothesis ────────────────────────────────────────────────────────────
+  function runHypothesis() {
+    const stmt   = document.getElementById('hyp-statement').value.trim();
+    const window = parseInt(document.getElementById('hyp-window').value)||30;
+    const trigCat = document.getElementById('hyp-trigger-cat').value;
+    const condDir = document.getElementById('hyp-condition-dir').value;
+    const minAmt  = parseFloat(document.getElementById('hyp-minamount').value)||undefined;
+
+    const hyp = {
+      id: 'H-'+Date.now(),
+      statement: stmt || `${trigCat} credits (IN) followed by ${condDir} within ${window} days`,
+      criteria: {
+        trigger: { category: trigCat, direction: 'IN', minAmount: minAmt },
+        windowDays: window,
+        condition: { direction: condDir },
+      },
+    };
+
+    const c = State.computed;
+    const result = Engine.hypothesisTester(c?.transactions||[], hyp, DEFAULT_RULES);
+    _hyp_result = result;
+
+    document.getElementById('hyp-results').innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${esc(hyp.statement)}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">${esc(result.summary)}</div>
+
+      <div class="hyp-bucket">
+        <div class="hyp-bucket-title supporting">✓ Supporting Evidence (${result.supporting.length})</div>
+        ${result.supporting.length
+          ? result.supporting.map(e=>`<div class="hyp-item"><span style="color:var(--text-muted);font-family:var(--font-mono);font-size:10px">${dateStr(e.date)} </span>${esc(e.description)}</div>`).join('')
+          : '<div class="hyp-item text-muted">None found.</div>'}
+      </div>
+      <div class="hyp-bucket">
+        <div class="hyp-bucket-title contradicting">✗ Contradicting Evidence (${result.contradicting.length})</div>
+        ${result.contradicting.length
+          ? result.contradicting.map(e=>`<div class="hyp-item"><span style="color:var(--text-muted);font-family:var(--font-mono);font-size:10px">${dateStr(e.date)} </span>${esc(e.description)}</div>`).join('')
+          : '<div class="hyp-item text-muted">None found.</div>'}
+      </div>
+      <div class="hyp-bucket">
+        <div class="hyp-bucket-title neutral">~ Neutral (${result.neutral.length} sampled)</div>
+        ${result.neutral.slice(0,5).map(e=>`<div class="hyp-item">${esc(e.description)}</div>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--text-muted);padding:8px;background:var(--bg-2);border-radius:4px;border:1px solid var(--border)">
+        ⚠ No conclusion drawn by this tool. Evidence is organised for investigator review only.
+      </div>`;
+  }
+
+  // ── AI ────────────────────────────────────────────────────────────────────
+  function setAIResponse(text, isError=false) {
+    const el2 = document.getElementById('ai-response');
+    el2.className = 'ai-response' + (isError?' error':'');
+    el2.textContent = text;
+  }
+
+  async function runAI(action, overrideQ) {
+    const c = State.computed;
+    if (!State.geminiKey) { setAIResponse('Enter an API key first.', true); switchRpTab('ai'); return; }
+    setAIResponse('Thinking…');
+    document.getElementById('ai-response').classList.add('loading');
+    switchRpTab('ai');
+    try {
+      let result;
+      if (action==='explain-period')  result = await AI.explainPeriod(c);
+      else if (action==='explain-entity') result = await AI.explainEntity(_selectedEntityId||'NIRAJ', c);
+      else if (action==='generate-report') result = await AI.generateReport(c);
+      else {
+        const q = overrideQ || document.getElementById('ai-query').value.trim();
+        if (!q) { setAIResponse('Enter a question first.'); return; }
+        const { answer } = await AI.answerQuestion(q, c);
+        result = answer;
+      }
+      setAIResponse(result);
+    } catch(e) {
+      setAIResponse('Error: ' + e.message, true);
+    }
+  }
+
+  function askAI(question) {
+    document.getElementById('ai-query').value = question;
+    runAI('ask', question);
+  }
+
+  // ── Table filtering ───────────────────────────────────────────────────────
+  function applyTableFilters() {
+    State.setFilter({
+      searchText: document.getElementById('txn-search').value,
+      banks:      [document.getElementById('filter-bank').value].filter(Boolean),
+      direction:  document.getElementById('filter-dir').value || null,
+      categories: [document.getElementById('filter-cat').value].filter(Boolean),
+      flags:      [document.getElementById('filter-flag').value].filter(Boolean),
+      minAmount:  parseFloat(document.getElementById('filter-min').value) || null,
+    });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function el(tag, cls) {
+    const e = document.createElement(tag||'div');
+    if (cls) e.className = cls;
+    return e;
+  }
+  function setText(id, text) {
+    const e = document.getElementById(id);
+    if (e) e.textContent = text;
+  }
+  function setClass(id, cls) {
+    const e = document.getElementById(id);
+    if (e) e.className = cls;
+  }
+  function setValue(id, val) {
+    const e = document.getElementById(id);
+    if (e) e.value = val;
+  }
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // ── Wire events ───────────────────────────────────────────────────────────
+  function wireEvents() {
+    // Nav views
+    document.querySelectorAll('.nav-item[data-view]').forEach(n =>
+      n.addEventListener('click', () => switchView(n.dataset.view)));
+
+    // Right panel tabs
+    document.querySelectorAll('.rp-tab[data-rp]').forEach(t =>
+      t.addEventListener('click', () => switchRpTab(t.dataset.rp)));
+
+    // Period buttons
+    document.querySelectorAll('.period-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.period-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      if (b.dataset.range==='all') State.clearFilter();
+      else if (b.dataset.range==='fy') State.setFY(b.dataset.fy);
+    }));
+
+    // Custom date range
+    function applyDateRange() {
+      document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+      const from = document.getElementById('date-from').value;
+      const to   = document.getElementById('date-to').value;
+      State.setDateRange(from||null, to||null);
+    }
+    document.getElementById('date-from').addEventListener('change', applyDateRange);
+    document.getElementById('date-to').addEventListener('change', applyDateRange);
+
+    // Clear entity filter
+    document.getElementById('clear-entity-filter').addEventListener('click', () => {
+      State.setEntityFilter([]);
+      _selectedEntityId = null;
+      document.querySelectorAll('#entity-list .entity-item').forEach(i=>i.classList.remove('selected'));
+    });
+
+    // Topbar actions
+    document.getElementById('btn-undo').addEventListener('click', () => State.undo());
+    document.getElementById('btn-snapshot').addEventListener('click', () => {
+      const label = prompt('Snapshot label:', 'Snapshot '+new Date().toLocaleString('en-IN'));
+      if (label) { State.createSnapshot(label); alert('Snapshot saved.'); }
+    });
+    document.getElementById('btn-print-report').addEventListener('click', () => {
+      Export.printReport(State.computed, State.activeCase);
+    });
+    document.getElementById('btn-export-all').addEventListener('click', () => {
+      const menu = document.createElement('div');
+      menu.style.cssText = 'position:fixed;top:50px;right:12px;background:var(--bg-2);border:1px solid var(--border-bright);border-radius:6px;padding:6px;z-index:999;display:flex;flex-direction:column;gap:4px;min-width:180px';
+      const btns = [
+        ['Transactions CSV', () => Export.downloadCSV(State.computed.displayTransactions, State.computed.flags)],
+        ['Entity Summary CSV', () => Export.downloadEntityCSV(State.computed.scores)],
+        ['Flags CSV', () => Export.downloadFlagCSV(State.computed.flags, State.computed.transactions)],
+        ['Full Case JSON', () => Export.downloadCaseJSON()],
+        ['Print Report', () => Export.printReport(State.computed, State.activeCase)],
+      ];
+      btns.forEach(([label, fn]) => {
+        const b = el('button','btn btn-ghost');
+        b.textContent = label; b.style.width='100%'; b.style.justifyContent='flex-start';
+        b.onclick = () => { fn(); document.body.removeChild(menu); };
+        menu.appendChild(b);
+      });
+      document.body.appendChild(menu);
+      setTimeout(() => document.addEventListener('click', () => { if(document.body.contains(menu)) document.body.removeChild(menu); }, {once:true}), 100);
+    });
+
+    // Replay
+    document.getElementById('btn-replay').addEventListener('click', () => {
+      const bar = document.getElementById('replay-bar');
+      if (bar.classList.contains('active')) {
+        Charts.stopReplay();
+        bar.classList.remove('active');
+        document.getElementById('btn-replay').textContent = '▶ Replay';
+      } else {
+        bar.classList.add('active');
+        document.getElementById('btn-replay').textContent = '■ Stop';
+        const speed = parseFloat(document.getElementById('replay-speed').value)||1;
+        const mode  = document.getElementById('replay-mode').value;
+        Charts.startReplay(speed, mode);
+      }
+    });
+    document.getElementById('btn-replay-stop').addEventListener('click', () => {
+      Charts.stopReplay();
+      document.getElementById('replay-bar').classList.remove('active');
+      document.getElementById('btn-replay').textContent = '▶ Replay';
+    });
+
+    // Table filters
+    ['txn-search','filter-min'].forEach(id =>
+      document.getElementById(id).addEventListener('input', applyTableFilters));
+    ['filter-bank','filter-dir','filter-cat','filter-flag'].forEach(id =>
+      document.getElementById(id).addEventListener('change', applyTableFilters));
+
+    // Page size
+    document.getElementById('page-size').addEventListener('change', e => {
+      _txnPageSize = parseInt(e.target.value);
+      _txnPage = 1;
+      renderTxnPage();
+    });
+
+    // Table sort
+    document.querySelectorAll('.txn-table th[data-sort]').forEach(th =>
+      th.addEventListener('click', () => {
+        const f = th.dataset.sort;
+        if (_txnSort.field===f) _txnSort.dir = _txnSort.dir==='asc'?'desc':'asc';
+        else { _txnSort.field=f; _txnSort.dir='desc'; }
+        document.querySelectorAll('.txn-table th[data-sort]').forEach(t=>{t.classList.remove('sort-asc','sort-desc');});
+        th.classList.add('sort-'+_txnSort.dir);
+        sortTxns(); renderTxnPage();
+      }));
+
+    // CSV export
+    document.getElementById('btn-export-csv').addEventListener('click', () =>
+      Export.downloadCSV(State.computed?.displayTransactions, State.computed?.flags));
+    document.getElementById('btn-export-flags').addEventListener('click', () =>
+      Export.downloadFlagCSV(State.computed?.flags, State.computed?.transactions));
+
+    // Hypothesis
+    document.getElementById('btn-run-hyp').addEventListener('click', runHypothesis);
+    document.getElementById('btn-ai-hyp').addEventListener('click', async () => {
+      if (!_hyp_result) { alert('Run hypothesis first.'); return; }
+      await askAI('Based on these hypothesis results: ' + JSON.stringify({
+        summary: _hyp_result.summary,
+        supporting: _hyp_result.supporting.slice(0,10),
+        contradicting: _hyp_result.contradicting.slice(0,5)
+      }) + ' — explain what an investigator should examine further.');
+    });
+
+    // AI
+    document.getElementById('btn-save-key').addEventListener('click', () => {
+      const key = document.getElementById('ai-key-input').value.trim();
+      if (key) { State.setGeminiKey(key); setAIResponse('API key saved. Ready.'); }
+    });
+    document.getElementById('btn-ai-ask').addEventListener('click', () => runAI('ask'));
+    document.getElementById('ai-query').addEventListener('keydown', e => {
+      if (e.key==='Enter' && e.ctrlKey) { e.preventDefault(); runAI('ask'); }
+    });
+    document.getElementById('btn-ai-filter').addEventListener('click', async () => {
+      const q = document.getElementById('ai-query').value.trim();
+      if (!q || !State.geminiKey) return;
+      const filter = await AI.translateQuery(q);
+      if (filter) { State.setFilter(filter); setAIResponse('Filter applied from query.'); }
+      else setAIResponse('Could not translate query to filter. Try being more specific.');
+    });
+    document.querySelectorAll('.ai-quick-btn').forEach(b =>
+      b.addEventListener('click', () => runAI(b.dataset.action)));
+
+    // Markers
+    document.getElementById('btn-add-marker').addEventListener('click', () => {
+      const label = document.getElementById('marker-label').value.trim();
+      if (!label) return;
+      State.addMarker({
+        label,
+        date: document.getElementById('marker-date').value || new Date().toISOString().slice(0,10),
+        type: document.getElementById('marker-type').value,
+        description: document.getElementById('marker-desc').value.trim(),
+      });
+      document.getElementById('marker-label').value='';
+      document.getElementById('marker-desc').value='';
+      updateMarkers();
+    });
+
+    // Restore saved key
+    if (State.geminiKey) {
+      document.getElementById('ai-key-input').value = State.geminiKey;
+      setAIResponse('API key loaded. Ready for investigation queries.');
+    }
+
+    // ── Animated network ────────────────────────────────────────────────────
+    document.getElementById('btn-net-play')?.addEventListener('click', () => {
+      Charts.startNetworkAnimation(State.computed);
+    });
+    document.getElementById('btn-net-stop')?.addEventListener('click', () => {
+      Charts.stopNetworkAnimation();
+    });
+    document.getElementById('net-year-slider')?.addEventListener('input', e => {
+      _netYear = parseInt(e.target.value);
+      document.getElementById('net-year-label').textContent = _netYear;
+      Charts.renderAnimatedNetwork(State.computed, _netYear);
+    });
+
+    // ── Scenario comparison ─────────────────────────────────────────────────
+    document.getElementById('btn-run-scenario')?.addEventListener('click', () => {
+      const aFrom = document.getElementById('scenario-a-from').value;
+      const aTo   = document.getElementById('scenario-a-to').value;
+      const bFrom = document.getElementById('scenario-b-from').value;
+      const bTo   = document.getElementById('scenario-b-to').value;
+      if (!aFrom || !aTo || !bFrom || !bTo) { alert('Set both date ranges first.'); return; }
+
+      // Compute both periods using the engine directly
+      const rulesA = DEFAULT_RULES.filter(r => !State.disabledRules.includes(r.id));
+      const cA = Engine.compute(RAW_TRANSACTIONS, rulesA, DEFAULT_ENTITIES, State.entityEdits, aFrom, aTo);
+      const cB = Engine.compute(RAW_TRANSACTIONS, rulesA, DEFAULT_ENTITIES, State.entityEdits, bFrom, bTo);
+
+      const labelA = `${aFrom} → ${aTo}`;
+      const labelB = `${bFrom} → ${bTo}`;
+      document.getElementById('scenario-a-title').textContent = labelA;
+      document.getElementById('scenario-b-title').textContent = labelB;
+      Charts.renderScenarioComparison(cA, cB, labelA, labelB);
+    });
+
+    // Scenario presets
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.dataset.preset;
+        if (p === 'fy21-fy22') {
+          setValue('scenario-a-from','2020-04-01'); setValue('scenario-a-to','2021-03-31');
+          setValue('scenario-b-from','2021-04-01'); setValue('scenario-b-to','2022-03-31');
+        } else if (p === 'pre-post-nhai') {
+          setValue('scenario-a-from','2019-01-01'); setValue('scenario-a-to','2021-03-31');
+          setValue('scenario-b-from','2021-04-01'); setValue('scenario-b-to','2022-12-31');
+        }
+      });
+    });
+
+    // ── AI narration build ──────────────────────────────────────────────────
+    document.getElementById('btn-build-narration')?.addEventListener('click', async () => {
+      if (!State.geminiKey) { setAIResponse('Enter API key first.', true); switchRpTab('ai'); return; }
+      setAIResponse('Building narration script…');
+      switchRpTab('ai');
+      const ok = await Charts.buildAINarration(State.computed);
+      if (ok) setAIResponse('Narration ready. Press ▶ Replay → Events Only to hear it.');
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function init() {
+    State.on('statechange', onStateChange);
+    State.on('markerAdded', updateMarkers);
+    State.on('markerRemoved', updateMarkers);
+    wireEvents();
+    State.init();
+  }
+
+  return { init, selectEntity, filterByEntity, highlightTxns, jumpToTxn, askAI, switchView };
+
+})();
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
